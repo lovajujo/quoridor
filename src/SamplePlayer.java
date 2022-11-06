@@ -66,7 +66,7 @@ public class SamplePlayer extends QuoridorPlayer {
         ArrayList<Node> closed=new ArrayList<>();
         open.add(start);
         while(!open.isEmpty()){
-            ArrayList<Node> children=findChildren(start, open);
+            ArrayList<Node> children=findChildren(start);
             Node current=findMinimum(open);
             if(current.getRow()==whichWay){
                 index[0]=current.getRow();
@@ -74,7 +74,9 @@ public class SamplePlayer extends QuoridorPlayer {
                 return index;
             }
             open.remove(start);
-            closed.add(start);
+            if(!closed.contains(start)){
+                closed.add(start);
+            }
             for (Node child : children) {
                 //if(!(child.getRow()==minChild.getRow() && child.getColumn()== minChild.getColumn())){
                     if(!(closed.contains(child) && open.contains(child)) &&
@@ -102,6 +104,7 @@ public class SamplePlayer extends QuoridorPlayer {
         for(Node node:open){
             if(node.getF()<f || (node.getF()==f && node.getG()<g)){
                 f=node.getF();
+                g= node.getG();
                 i=node.getRow();
                 j=node.getColumn();
             }
@@ -109,25 +112,21 @@ public class SamplePlayer extends QuoridorPlayer {
         return graph[i][j];
     }
 
-    public ArrayList<Node> findChildren( Node parent, ArrayList<Node> open){
+    public ArrayList<Node> findChildren( Node parent){
         int i=parent.getRow();
         int j=parent.getColumn();
         ArrayList<Node> children=new ArrayList<>();
         if(i>0){
             children.add(graph[i-1][j]);
-            open.add(graph[i-1][j]);
         }
         if(i<QuoridorGame.WIDTH-1){
             children.add(graph[i+1][j]);
-            open.add(graph[i+1][j]);
         }
         if(j>0){
             children.add(graph[i][j-1]);
-            open.add(graph[i][j-1]);
         }
         if(j<QuoridorGame.HEIGHT-1){
             children.add(graph[i][j+1]);
-            open.add(graph[i][j+1]);
         }
 
         return  children;
