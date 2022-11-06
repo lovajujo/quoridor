@@ -5,6 +5,7 @@ import game.quoridor.QuoridorGame;
 import game.quoridor.QuoridorPlayer;
 import game.quoridor.WallAction;
 import game.quoridor.players.DummyPlayer;
+import game.quoridor.utils.PlaceObject;
 import game.quoridor.utils.QuoridorAction;
 import game.quoridor.utils.WallObject;
 
@@ -76,8 +77,8 @@ public class SamplePlayer extends QuoridorPlayer {
             ArrayList<Node> children=findChildren(current);
             for (Node child : children) {
                 if (!closed.contains(child) && !open.contains(child) &&
-                        QuoridorGame.checkWall(new WallObject(child.getRow(), child.getColumn(), true), walls, players) &&
-                        QuoridorGame.checkWall(new WallObject(child.getRow(), child.getColumn(), false), walls, players)){
+                        QuoridorGame.checkCandidateMove(new PlaceObject(current.getRow(), current.getColumn()),
+                                new PlaceObject(child.getRow(), child.getColumn()), walls, players)){
                     child.setParent(current);
                     open.add(child);
                 }
