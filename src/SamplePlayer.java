@@ -69,7 +69,7 @@ public class SamplePlayer extends QuoridorPlayer {
         while(!open.isEmpty()){
             Node current=findMinimum(open);
             if(current.getRow()==goal){
-                Node next=reconstructPath(closed.getLast(), wall);
+                Node next=reconstructPath(current, wall);
                 index[0]=next.getRow();
                 index[1]=next.getColumn();
                 resetParents();
@@ -89,22 +89,22 @@ public class SamplePlayer extends QuoridorPlayer {
             }
             closed.add(current);
         }
-
         return index;
     }
 
     public Node reconstructPath(Node last, boolean wall){
-        Node parent=last.getParent();
-        if(wall){
-            while(parent.getParent()!=null){
-                parent=parent.getParent();
-            }
-        }else{
-            while(parent.getParent().getParent()!=null){
-                parent=parent.getParent();
-            }
+        Node parent=last;
+        LinkedList<Node> path=new LinkedList<>();
+        while(parent!=null){
+            path.add(parent);
+            parent=parent.getParent();
         }
-        return parent;
+        if((wall || path.size()==1) && whichWay==0){
+            return path.getLast();
+        }
+        path.removeLast();
+        return path.getLast();
+
     }
 
     public Node findMinimum(ArrayList<Node> open){
