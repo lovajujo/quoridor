@@ -1,3 +1,4 @@
+///lovajujo, lovaszi.zsuzsanna@stud.u-szeged.hu
 import java.util.*;
 
 import game.quoridor.MoveAction;
@@ -10,14 +11,14 @@ import game.quoridor.utils.QuoridorAction;
 import game.quoridor.utils.WallObject;
 
 
-public class SamplePlayer extends QuoridorPlayer {
+public class Agent extends QuoridorPlayer {
     private final List<WallObject> walls = new LinkedList<>();
     private final QuoridorPlayer[] players = new QuoridorPlayer[2];
     private int numWalls;
     private final Node[][] graph = getGraph();
     private final int whichWay=(color==1 ? 0 : 8);
 
-    public SamplePlayer(int i, int j, int color, Random random){
+    public Agent(int i, int j, int color, Random random){
         super(i, j, color, random);
         players[color]=this;
         players[1-color]=new DummyPlayer((1-color) * (QuoridorGame.HEIGHT - 1), j, 1-color, null);
