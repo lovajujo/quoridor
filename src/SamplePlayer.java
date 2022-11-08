@@ -15,6 +15,7 @@ public class SamplePlayer extends QuoridorPlayer {
     private final QuoridorPlayer[] players = new QuoridorPlayer[2];
     private int numWalls;
     private final Node[][] graph = getGraph();
+    private final int whichWay=(color==1 ? 0 : 8);
 
     public SamplePlayer(int i, int j, int color, Random random){
         super(i, j, color, random);
@@ -41,12 +42,12 @@ public class SamplePlayer extends QuoridorPlayer {
                 return wall.toWallAction();
             }
         }
-        int[] index = findShortestPath(graph[players[color].i][players[color].j], 0);
+        int[] index = findShortestPath(graph[players[color].i][players[color].j], whichWay, false);
         return new MoveAction(players[color].i, players[color].j, index[0], index[1]);
     }
     public WallObject buildWall(Node start){
         ArrayList<WallObject> wallCandidates=new ArrayList<>();
-        int[] index=findShortestPath(start, 8);
+        int[] index=findShortestPath(start, 8-whichWay, true);
         wallCandidates.add(new WallObject(index[0], index[1],true));
         if(index[1]>0){
             wallCandidates.add(new WallObject(index[0], index[1]-1, true));
@@ -59,7 +60,7 @@ public class SamplePlayer extends QuoridorPlayer {
         return null;
     }
     /*tömböt ad vissz: i, j index (kövi lépés)*/
-    public int[] findShortestPath(Node start, int goal){
+    public int[] findShortestPath(Node start, int goal, boolean wall){
         setNodeCosts(start, goal);
         int[]index={start.getRow(), start.getColumn()};
         ArrayList<Node> open=new ArrayList<>();
@@ -68,33 +69,40 @@ public class SamplePlayer extends QuoridorPlayer {
         while(!open.isEmpty()){
             Node current=findMinimum(open);
             if(current.getRow()==goal){
-                Node next=reconstructPath(closed.getLast());
+                Node next=reconstructPath(closed.getLast(), wall);
                 index[0]=next.getRow();
                 index[1]=next.getColumn();
+                resetParents();
                 return index;
             }
             open.remove(current);
             ArrayList<Node> children=findChildren(current);
             for (Node child : children) {
                 if (!closed.contains(child) && !open.contains(child) &&
-                        QuoridorGame.checkCandidateMove(new PlaceObject(current.getRow(), current.getColumn()),
-                                new PlaceObject(child.getRow(), child.getColumn()), walls, players)){
-                    child.setParent(current);
+                        !QuoridorGame.isWallBetween(walls, new PlaceObject(current.getRow(), current.getColumn()),
+                                new PlaceObject(child.getRow(), child.getColumn()))){
+                    if(!child.sameNode(start)){
+                        child.setParent(current);
+                    }
                     open.add(child);
                 }
             }
             closed.add(current);
         }
-        Node next=reconstructPath(closed.getLast());
-        index[0]=next.getRow();
-        index[1]=next.getColumn();
+
         return index;
     }
 
-    public Node reconstructPath(Node last){
+    public Node reconstructPath(Node last, boolean wall){
         Node parent=last.getParent();
-        while(parent.getParent().getParent()!=null){
-            parent=parent.getParent();
+        if(wall){
+            while(parent.getParent()!=null){
+                parent=parent.getParent();
+            }
+        }else{
+            while(parent.getParent().getParent()!=null){
+                parent=parent.getParent();
+            }
         }
         return parent;
     }
@@ -163,6 +171,14 @@ public class SamplePlayer extends QuoridorPlayer {
         }
     }
 
+    public void resetParents(){
+        for(int i=0;i<QuoridorGame.HEIGHT;i++){
+            for(int j=0; j<QuoridorGame.WIDTH;j++){
+                graph[i][j].setParent(null);
+            }
+        }
+    }
+
     class Node{
         Node parent=null;
         int column;
@@ -225,6 +241,10 @@ public class SamplePlayer extends QuoridorPlayer {
 
         public int getRow() {
             return row;
+        }
+
+        public boolean sameNode(Node other){
+            return (getRow()==other.getRow() && getColumn()==other.getColumn());
         }
     }
 }
