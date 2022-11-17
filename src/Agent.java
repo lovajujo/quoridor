@@ -1,6 +1,7 @@
 ///lovajujo, lovaszi.zsuzsanna@stud.u-szeged.hu
 import java.util.*;
 
+import game.engine.ui.BoardGameCanvas;
 import game.quoridor.MoveAction;
 import game.quoridor.QuoridorGame;
 import game.quoridor.QuoridorPlayer;
@@ -29,59 +30,69 @@ public class Agent extends QuoridorPlayer {
     public QuoridorAction getAction(QuoridorAction prevAction, long[] remainingTimes) {
 
         if (prevAction instanceof WallAction) {
-            WallAction a = (WallAction) prevAction;
-            walls.add(new WallObject(a.i, a.j, a.horizontal));
+            WallAction action = (WallAction) prevAction;
+            walls.add(new WallObject(action.i, action.j, action.horizontal));
         } else if (prevAction instanceof MoveAction) {
-            MoveAction a = (MoveAction) prevAction;
-            players[1 - color].i = a.to_i;
-            players[1 - color].j = a.to_j;
-
-            WallObject wall = buildWall(graph[players[1 - color].i][players[1 - color].j]);
+            MoveAction action = (MoveAction) prevAction;
+            players[1 - color].i = action.to_i;
+            players[1 - color].j = action.to_j;
+        }
+        LinkedList<Node> thisPath = findShortestPath(graph[i][j], whichWay);
+        LinkedList<Node> oppostionPath = findShortestPath(graph[players[1 - color].i][players[1 - color].j], 8 - whichWay);
+        if (thisPath.size() > oppostionPath.size()) {
+            WallObject wall = buildWall(nextWall(oppostionPath));
             if (wall != null) {
                 numWalls++;
                 walls.add(wall);
                 return wall.toWallAction();
             }
         }
-        int[] index = findShortestPath(graph[players[color].i][players[color].j], whichWay, false);
-        return new MoveAction(players[color].i, players[color].j, index[0], index[1]);
+        LinkedList<Integer> place=nextMove(thisPath);
+        return new MoveAction(players[color].i, players[color].j,
+                place.getFirst(), place.getLast());
     }
-    public WallObject buildWall(Node start){
+    public WallObject buildWall(LinkedList<Integer> next){
         ArrayList<WallObject> wallCandidates=new ArrayList<>();
-        int[] index=findShortestPath(start, 8-whichWay, true);
-        wallCandidates.add(new WallObject(index[0], index[1],true));
-        if(index[1]>0){
-            wallCandidates.add(new WallObject(index[0], index[1]-1, true));
+        if(next.getFirst()==players[1-color].i){
+            wallCandidates.add(new WallObject(next.getFirst(), next.getLast()-1,false));
+            if(next.getFirst()>0){
+                wallCandidates.add(new WallObject(next.getFirst()-1, next.getLast()-1,false));
+            }
+        }
+        else if(next.getLast()==players[1-color].j){
+            wallCandidates.add(new WallObject(next.getFirst(), next.getLast(),true));
+            if(next.getLast()>0){
+                wallCandidates.add(new WallObject(next.getFirst(), next.getLast()-1,true));
+            }
         }
         for(WallObject wall:wallCandidates){
-            if(QuoridorGame.checkWall(wall, walls, players)){
+            if(numWalls < QuoridorGame.MAX_WALLS && QuoridorGame.checkWall(wall, walls, players)){
                 return wall;
             }
         }
         return null;
     }
     /*tömböt ad vissz: i, j index (kövi lépés)*/
-    public int[] findShortestPath(Node start, int goal, boolean wall){
+    public LinkedList<Node> findShortestPath(Node start, int goal){
         setNodeCosts(start, goal);
-        int[]index={start.getRow(), start.getColumn()};
         ArrayList<Node> open=new ArrayList<>();
         LinkedList<Node> closed=new LinkedList<>();
         open.add(start);
         while(!open.isEmpty()){
             Node current=findMinimum(open);
             if(current.getRow()==goal){
-                Node next=reconstructPath(current, wall);
-                index[0]=next.getRow();
-                index[1]=next.getColumn();
+                LinkedList<Node> path;
+                path=reconstructPath(current);
                 resetParents();
-                return index;
+                return path;
             }
             open.remove(current);
             ArrayList<Node> children=findChildren(current);
             for (Node child : children) {
                 if (!closed.contains(child) && !open.contains(child) &&
                         !QuoridorGame.isWallBetween(walls, new PlaceObject(current.getRow(), current.getColumn()),
-                                new PlaceObject(child.getRow(), child.getColumn()))){
+                                new PlaceObject(child.getRow(), child.getColumn())) &&
+                                !QuoridorGame.isPlayerOn(players, new PlaceObject(child.getRow(), child.getColumn()))){
                     if(!child.sameNode(start)){
                         child.setParent(current);
                     }
@@ -90,22 +101,39 @@ public class Agent extends QuoridorPlayer {
             }
             closed.add(current);
         }
-        return index;
+        return null;
     }
 
-    public Node reconstructPath(Node last, boolean wall){
+    public LinkedList<Node> reconstructPath(Node last){
         Node parent=last;
         LinkedList<Node> path=new LinkedList<>();
-        while(parent!=null){
-            path.add(parent);
+        path.add(parent);
+        while(parent.getParent()!=null){
+            path.add(parent.getParent());
             parent=parent.getParent();
         }
-        if((wall || path.size()==1) && whichWay==0){
-            return path.getLast();
-        }
-        path.removeLast();
-        return path.getLast();
+        for (Node node:path) {
 
+        }
+        return path;
+    }
+
+    public LinkedList<Integer> nextMove(LinkedList<Node> path){
+        LinkedList<Integer> place=new LinkedList<>();
+        path.removeLast();
+        place.add(path.getLast().getRow());
+        place.add(path.getLast().getColumn());
+        return place;
+    }
+
+    public LinkedList<Integer> nextWall(LinkedList<Node> path){
+        if(whichWay==8){
+            return nextMove(path);
+        }
+        LinkedList<Integer> place=new LinkedList<>();
+        place.add(path.getLast().getRow());
+        place.add(path.getLast().getColumn());
+        return place;
     }
 
     public Node findMinimum(ArrayList<Node> open){
