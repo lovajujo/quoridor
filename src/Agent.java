@@ -39,14 +39,14 @@ public class Agent extends QuoridorPlayer {
         LinkedList<Node> thisPath = findShortestPath(graph[i][j], whichWay);
         LinkedList<Node> oppositionPath = findShortestPath(graph[players[1 - color].i][players[1 - color].j], 8 - whichWay);
         if (thisPath.size() > oppositionPath.size()) {
-            WallObject wall = getWall(nextWall(oppositionPath));
+            WallObject wall = getWall(nextPlace(oppositionPath));
             if (wall != null) {
                 numWalls++;
                 walls.add(wall);
                 return wall.toWallAction();
             }
         }
-        LinkedList<Integer> place=nextMove(thisPath);
+        LinkedList<Integer> place= nextPlace(thisPath);
         return new MoveAction(players[color].i, players[color].j,
                 place.getFirst(), place.getLast());
     }
@@ -133,19 +133,9 @@ public class Agent extends QuoridorPlayer {
         return path;
     }
 
-    public LinkedList<Integer> nextMove(LinkedList<Node> path){
+    public LinkedList<Integer> nextPlace(LinkedList<Node> path){
         LinkedList<Integer> place=new LinkedList<>();
         path.removeLast();
-        place.add(path.getLast().getRow());
-        place.add(path.getLast().getColumn());
-        return place;
-    }
-
-    public LinkedList<Integer> nextWall(LinkedList<Node> path){
-        if(whichWay==8){
-            return nextMove(path);
-        }
-        LinkedList<Integer> place=new LinkedList<>();
         place.add(path.getLast().getRow());
         place.add(path.getLast().getColumn());
         return place;
