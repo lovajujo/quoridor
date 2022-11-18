@@ -1,7 +1,6 @@
 ///lovajujo, lovaszi.zsuzsanna@stud.u-szeged.hu
 import java.util.*;
 
-import game.engine.ui.BoardGameCanvas;
 import game.quoridor.MoveAction;
 import game.quoridor.QuoridorGame;
 import game.quoridor.QuoridorPlayer;
@@ -38,9 +37,9 @@ public class Agent extends QuoridorPlayer {
             players[1 - color].j = action.to_j;
         }
         LinkedList<Node> thisPath = findShortestPath(graph[i][j], whichWay);
-        LinkedList<Node> oppostionPath = findShortestPath(graph[players[1 - color].i][players[1 - color].j], 8 - whichWay);
-        if (thisPath.size() > oppostionPath.size()) {
-            WallObject wall = buildWall(nextWall(oppostionPath));
+        LinkedList<Node> oppositionPath = findShortestPath(graph[players[1 - color].i][players[1 - color].j], 8 - whichWay);
+        if (thisPath.size() > oppositionPath.size()) {
+            WallObject wall = getWall(nextWall(oppositionPath));
             if (wall != null) {
                 numWalls++;
                 walls.add(wall);
@@ -51,19 +50,35 @@ public class Agent extends QuoridorPlayer {
         return new MoveAction(players[color].i, players[color].j,
                 place.getFirst(), place.getLast());
     }
-    public WallObject buildWall(LinkedList<Integer> next){
+    public WallObject getWall(LinkedList<Integer> next){
         ArrayList<WallObject> wallCandidates=new ArrayList<>();
         if(next.getFirst()==players[1-color].i){
-            wallCandidates.add(new WallObject(next.getFirst(), next.getLast()-1,false));
-            if(next.getFirst()>0){
-                wallCandidates.add(new WallObject(next.getFirst()-1, next.getLast()-1,false));
+            if(next.getLast()-players[1-color].j==1){
+                wallCandidates.add(new WallObject(players[1-color].i, players[1-color].j,false));
+                if(players[1-color].i>0){
+                    wallCandidates.add(new WallObject(players[1-color].i-1, players[1-color].j,false));
+                }
+            }else{
+                wallCandidates.add(new WallObject(next.getFirst(), next.getLast(),false));
+                if(next.getFirst()>0){
+                    wallCandidates.add(new WallObject(next.getFirst()-1, next.getLast(),false));
+                }
             }
+
         }
         else if(next.getLast()==players[1-color].j){
-            wallCandidates.add(new WallObject(next.getFirst(), next.getLast(),true));
-            if(next.getLast()>0){
-                wallCandidates.add(new WallObject(next.getFirst(), next.getLast()-1,true));
+            if(whichWay==0){
+                wallCandidates.add(new WallObject(players[1-color].i,players[1-color].j, true));
+                if(players[1-color].j>0){
+                    wallCandidates.add(new WallObject(players[1-color].i,players[1-color].j-1,true));
+                }
+            }else{
+                wallCandidates.add(new WallObject(next.getFirst(), next.getLast(), true));
+                if(players[1-color].j>0){
+                    wallCandidates.add(new WallObject(next.getFirst(), next.getLast()-1,true));
+                }
             }
+
         }
         for(WallObject wall:wallCandidates){
             if(numWalls < QuoridorGame.MAX_WALLS && QuoridorGame.checkWall(wall, walls, players)){
@@ -72,14 +87,14 @@ public class Agent extends QuoridorPlayer {
         }
         return null;
     }
-    /*tömböt ad vissz: i, j index (kövi lépés)*/
+
     public LinkedList<Node> findShortestPath(Node start, int goal){
-        setNodeCosts(start, goal);
         ArrayList<Node> open=new ArrayList<>();
         LinkedList<Node> closed=new LinkedList<>();
         open.add(start);
+        int iteratation=0;
         while(!open.isEmpty()){
-            Node current=findMinimum(open);
+            Node current=findMinimum(open, goal, iteratation);
             if(current.getRow()==goal){
                 LinkedList<Node> path;
                 path=reconstructPath(current);
@@ -88,11 +103,11 @@ public class Agent extends QuoridorPlayer {
             }
             open.remove(current);
             ArrayList<Node> children=findChildren(current);
+            iteratation++;
             for (Node child : children) {
                 if (!closed.contains(child) && !open.contains(child) &&
                         !QuoridorGame.isWallBetween(walls, new PlaceObject(current.getRow(), current.getColumn()),
-                                new PlaceObject(child.getRow(), child.getColumn())) &&
-                                !QuoridorGame.isPlayerOn(players, new PlaceObject(child.getRow(), child.getColumn()))){
+                                new PlaceObject(child.getRow(), child.getColumn()))){
                     if(!child.sameNode(start)){
                         child.setParent(current);
                     }
@@ -136,12 +151,13 @@ public class Agent extends QuoridorPlayer {
         return place;
     }
 
-    public Node findMinimum(ArrayList<Node> open){
+    public Node findMinimum(ArrayList<Node> open, int goal, int stepsSoFar){
         int i=0;
         int j=0;
         int f=999;
         int g=999;
         for(Node node:open){
+            setNodeCost(node, goal, stepsSoFar);
             if(node.getF()<f || (node.getF()==f && node.getG()<g)){
                 f=node.getF();
                 g= node.getG();
@@ -151,6 +167,7 @@ public class Agent extends QuoridorPlayer {
         }
         return graph[i][j];
     }
+
 
     public ArrayList<Node> findChildren( Node parent){
         int i=parent.getRow();
@@ -175,10 +192,11 @@ public class Agent extends QuoridorPlayer {
     public int getHCost(int current_i, int destination_i){
         return Math.abs(current_i-destination_i);
     }
-    public int getGCost(int start_i, int start_j, int current_i, int current_j){
-        int vertical=Math.abs(start_j-current_j);
-        int horizontal=Math.abs(start_i-current_i);
-        return vertical+horizontal;
+
+    public void setNodeCost(Node node, int goal, int g){
+        node.setH(getHCost(node.getRow(), goal));
+        node.setG(g);
+        node.setF();
     }
 
     public Node[][] getGraph(){
@@ -190,15 +208,7 @@ public class Agent extends QuoridorPlayer {
         }
         return graph;
     }
-    public void setNodeCosts(Node start, int goal){
-        for(int i=0; i<QuoridorGame.HEIGHT;i++){
-            for(int j=0; j<QuoridorGame.WIDTH;j++){
-                graph[i][j].setG(getGCost(start.getRow(), start.getColumn(), i, j));
-                graph[i][j].setH(getHCost(i, goal));
-                graph[i][j].setF();
-            }
-        }
-    }
+
 
     public void resetParents(){
         for(int i=0;i<QuoridorGame.HEIGHT;i++){
@@ -275,5 +285,6 @@ public class Agent extends QuoridorPlayer {
         public boolean sameNode(Node other){
             return (getRow()==other.getRow() && getColumn()==other.getColumn());
         }
+
     }
 }
