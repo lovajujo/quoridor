@@ -92,9 +92,8 @@ public class Agent extends QuoridorPlayer {
         ArrayList<Node> open=new ArrayList<>();
         LinkedList<Node> closed=new LinkedList<>();
         open.add(start);
-        int iteratation=0;
+        Node current=start;
         while(!open.isEmpty()){
-            Node current=findMinimum(open, goal, iteratation);
             if(current.getRow()==goal){
                 LinkedList<Node> path;
                 path=reconstructPath(current);
@@ -103,7 +102,6 @@ public class Agent extends QuoridorPlayer {
             }
             open.remove(current);
             ArrayList<Node> children=findChildren(current);
-            iteratation++;
             for (Node child : children) {
                 if (!closed.contains(child) && !open.contains(child) &&
                         !QuoridorGame.isWallBetween(walls, new PlaceObject(current.getRow(), current.getColumn()),
@@ -115,6 +113,7 @@ public class Agent extends QuoridorPlayer {
                 }
             }
             closed.add(current);
+            current=findMinimum(open, goal, reconstructPath(current).size());
         }
         return null;
     }
