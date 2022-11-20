@@ -25,6 +25,12 @@ public class Agent extends QuoridorPlayer {
         numWalls = 0;
     }
 
+    /**
+     * Az Agent jatekos kovetkezo lepese
+     * @param prevAction the last action of the enemy player or null iff no previous action available.
+     * @param remainingTimes the overall remaining times of the players in the game
+     * @return kovetkezo lepes
+     */
     @Override
     public QuoridorAction getAction(QuoridorAction prevAction, long[] remainingTimes) {
 
@@ -50,6 +56,12 @@ public class Agent extends QuoridorPlayer {
         return new MoveAction(players[color].i, players[color].j,
                 place.getFirst(), place.getLast());
     }
+
+    /**
+     * Megkeresi azokat a lehetseges falakat, amikkel blokkolhato az ellenfel legrovidebb utja
+     * @param next a kovetkezo korben ez lenne az elso lepes
+     * @return ha van valid fal, azzal ter vissza, ha nincs null-lal
+     */
     public WallObject getWall(LinkedList<Integer> next){
         ArrayList<WallObject> wallCandidates=new ArrayList<>();
         if(next.getFirst()==players[1-color].i){
@@ -88,6 +100,12 @@ public class Agent extends QuoridorPlayer {
         return null;
     }
 
+    /**
+     * Legrovidebb utvonalat keresi
+     * @param start az aktualis jatekos aktualis pozicioja
+     * @param goal az aktualis jatekos cel oldala
+     * @return a legrovidebb utvonal lepeseit tartalmzo listaval ter vissza
+     */
     public LinkedList<Node> findShortestPath(Node start, int goal){
         ArrayList<Node> open=new ArrayList<>();
         LinkedList<Node> closed=new LinkedList<>();
@@ -125,6 +143,11 @@ public class Agent extends QuoridorPlayer {
         return null;
     }
 
+    /**
+     * az utolso lepes alapjan rekonstrualja az utvonalat
+     * @param last utolso lepes
+     * @return az egesz utvonalat adja vissza listazva annak lepeseit
+     */
     public LinkedList<Node> reconstructPath(Node last){
         Node parent=last;
         LinkedList<Node> path=new LinkedList<>();
@@ -139,6 +162,11 @@ public class Agent extends QuoridorPlayer {
         return path;
     }
 
+    /**
+     * az utvonal alapjan a kovetkezo lepes helyet adja meg
+     * @param path
+     * @return egy listaban a kovetkezo lepes soranak es oszlopanak szamat adja vissza
+     */
     public LinkedList<Integer> nextPlace(LinkedList<Node> path){
         LinkedList<Integer> place=new LinkedList<>();
         path.removeLast();
@@ -147,6 +175,13 @@ public class Agent extends QuoridorPlayer {
         return place;
     }
 
+    /**
+     * minimum koltsegu lepest keresi
+     * @param open a lehetseges lepesek halmaza
+     * @param goal az aktualis jatekos celja
+     * @param stepsSoFar hanyat leptunk eddig a kiindulasi helytol a jelenlegiig
+     * @return minimum koltsegu lepes helyevel ter vissza
+     */
     public Node findMinimum(ArrayList<Node> open, int goal, int stepsSoFar){
         int i=0;
         int j=0;
@@ -164,7 +199,11 @@ public class Agent extends QuoridorPlayer {
         return graph[i][j];
     }
 
-
+    /**
+     * az aktualis pozicio szomszedait keresi
+     * @param parent aktualis pozicio
+     * @return szomszedokat tartalmazo lista
+     */
     public ArrayList<Node> findChildren( Node parent){
         int i=parent.getRow();
         int j=parent.getColumn();
@@ -185,16 +224,32 @@ public class Agent extends QuoridorPlayer {
         return  children;
     }
 
+    /**
+     * egy pozicio becsult tavolsaga a celtol
+     * @param current_i a pozicio sora
+     * @param destination_i a cel sora
+     * @return becsult koltseg erteke
+     */
     public int getHCost(int current_i, int destination_i){
         return Math.abs(current_i-destination_i);
     }
 
+    /**
+     * egy pozicio h, f, g koltsegeit alltija be
+     * @param node
+     * @param goal
+     * @param g
+     */
     public void setNodeCost(Node node, int goal, int g){
         node.setH(getHCost(node.getRow(), goal));
         node.setG(g);
         node.setF();
     }
 
+    /**
+     * felturbozott board, egy graf, elemei nem sima PlaceObjectek, hanem koltsegeket es szulot os tartalmazo csomopontok
+     * @return grafot ad vissza, (a board-ot)
+     */
     public Node[][] getGraph(){
         Node[][] graph=new Node[QuoridorGame.HEIGHT][QuoridorGame.WIDTH];
         for(int i=0; i<QuoridorGame.HEIGHT;i++){
@@ -205,7 +260,9 @@ public class Agent extends QuoridorPlayer {
         return graph;
     }
 
-
+    /**
+     * minden elem szulojet null-ra allitja
+     */
     public void resetParents(){
         for(int i=0;i<QuoridorGame.HEIGHT;i++){
             for(int j=0; j<QuoridorGame.WIDTH;j++){
@@ -214,6 +271,9 @@ public class Agent extends QuoridorPlayer {
         }
     }
 
+    /**
+     * graf csomopontok, koordinatai, koltsgeie, szuloje van
+     */
     class Node{
         Node parent=null;
         int column;
@@ -278,6 +338,11 @@ public class Agent extends QuoridorPlayer {
             return row;
         }
 
+        /**
+         * ugyanaz-e ket Node
+         * @param other masik Node
+         * @return igaz, ha ugyanaz
+         */
         public boolean sameNode(Node other){
             return (getRow()==other.getRow() && getColumn()==other.getColumn());
         }
