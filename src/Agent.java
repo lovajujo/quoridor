@@ -93,6 +93,7 @@ public class Agent extends QuoridorPlayer {
         LinkedList<Node> closed=new LinkedList<>();
         open.add(start);
         Node current=start;
+        int steps=1;
         while(!open.isEmpty()){
             if(current.getRow()==goal){
                 LinkedList<Node> path;
@@ -103,6 +104,11 @@ public class Agent extends QuoridorPlayer {
             open.remove(current);
             ArrayList<Node> children=findChildren(current);
             for (Node child : children) {
+                if(steps==1){
+                    if(QuoridorGame.isPlayerOn(players, new PlaceObject(child.getRow(), child.getColumn()))){
+                        continue;
+                    }
+                }
                 if (!closed.contains(child) && !open.contains(child) &&
                         !QuoridorGame.isWallBetween(walls, new PlaceObject(current.getRow(), current.getColumn()),
                                 new PlaceObject(child.getRow(), child.getColumn()))){
@@ -114,6 +120,7 @@ public class Agent extends QuoridorPlayer {
             }
             closed.add(current);
             current=findMinimum(open, goal, reconstructPath(current).size());
+            steps++;
         }
         return null;
     }
